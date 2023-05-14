@@ -1,0 +1,80 @@
+#include <LiquidCrystal_I2C.h>
+
+#define TRIGGER_PIN1 2   
+#define ECHO_PIN1 3      
+#define TRIGGER_PIN2 4   
+#define ECHO_PIN2 5      
+#define BUZZER_PIN 6     
+LiquidCrystal_I2C lcd(0x27, 16, 2);  
+
+int potentiometerPin = A0;   
+int distanceThreshold;      
+void setup() {
+  lcd.begin(16, 2);        
+  lcd.print("Distance Alert");
+  lcd.setCursor(0, 1);
+  lcd.print("Threshold: ");
+
+  pinMode(TRIGGER_PIN1, OUTPUT);
+  pinMode(ECHO_PIN1, INPUT);
+  pinMode(TRIGGER_PIN2, OUTPUT);
+  pinMode(ECHO_PIN2, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+}
+
+float measureDistance(int triggerPin, int echoPin) {
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  float distance = duration * 0.0343 / 2;
+  return distance;
+}
+
+void updateDistanceThreshold() {
+  int sensorValue = analogRead(potentiometerPin);
+  distanceThreshold = map(sensorValue, 0, 1023, 5, 100);  
+  lcd.setCursor(11, 1);
+  lcd.print("    ");     
+ lcd.setCursor(11, 1);
+  lcd.print(distanceThreshold);
+}
+
+void soundBuzzer() {
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(500);             
+  digitalWrite(BUZZER_PIN, LOW);
+  delay(500);             
+}
+
+void loop() {
+  updateDistanceThreshold();
+
+  float distance1 = measureDistance(TRIGGER_PIN1, ECHO_PIN1);
+  float distance2 = measureDistance(TRIGGER_PIN2, ECHO_PIN2);
+
+  lcd.setCursor(0, 1);
+  lcd.print("Dist1: ");
+  lcd.print(distance1);
+  lcd.print("cm   ");
+
+  lcd.setCursor(0, 2);
+  lcd.print("Dist2: ");
+  lcd.print(distance2);
+  lcd.print("cm   ");
+
+  
+  if (distance1 > distanceThreshold || distance2 > distanceThreshold) {
+    lcd.setCursor(0, 3);
+    lcd.print("ALERT: Back Posture!");
+    soundBuzzer();
+  } else {
+    lcd.setCursor(0, 3);
+    lcd.print("                    ");
+  }
+
+  delay(500);   
+}
